@@ -1,0 +1,6 @@
+MANIFEST
+Makefile.PL
+README
+bin/turtleshell
+lib/SDLx/Turtle.pm
+META.yml                                 Module meta-data (added by MakeMaker)

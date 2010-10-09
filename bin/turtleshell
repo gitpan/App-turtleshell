@@ -1,0 +1,109 @@
+#!/usr/bin/perl
+
+use strict;
+use lib 'lib';
+
+our $VERSION = '20101009.0';
+
+=head1 NAME
+
+App::turtleshell - A shell for playing with SDL
+
+=cut
+
+use SDL;
+use SDL::Event;
+use SDL::Video;
+use SDLx::App;
+use SDLx::Controller::Coro;
+use SDLx::Coro::REPL;
+use SDLx::Rect;
+use SDLx::Turtle;
+
+our $app;
+our $pixel_format;
+our $t;
+
+sub init_video {
+
+  SDL::Video::wm_grab_input( SDL_GRAB_ON );
+  SDL::init( SDL_INIT_VIDEO );
+
+  $app = SDLx::App->new(
+    -title => 'rectangle',
+    -width => 640,
+    -height => 480,
+  );
+  
+  clear();
+
+}
+
+sub clear {
+  # Initial background
+  $pixel_format = $app->format;
+  my $black_pixel = SDL::Video::map_RGB( $pixel_format, 0x00, 0x00, 0x00 );
+  my $rect = SDL::Rect->new( 0,0, $app->w, $app->h);
+  SDL::Video::fill_rect( $app, $rect, $black_pixel );
+}
+
+
+sub main {
+  init_video();
+
+  my $game = SDLx::Controller::Coro->new;
+
+  $game->add_event_handler( sub {
+    my $event = shift;
+    # print STDERR "In event handler\n";
+    if($event->type == SDL_QUIT) {
+      print "All done!\n";
+      exit;
+    }
+    return 1;
+  });
+
+  $game->add_show_handler( sub {
+    SDL::Video::update_rect($app, 0, 0, 640, 480);
+  });
+  
+  # Make me a TURTLE
+  $t = Turtle->new(app => $app, x => 300, y => 300, angle => 0);
+
+  if($ARGV[0]) {
+    print "Loading $ARGV[0]\n";
+    do $ARGV[0];
+  }
+
+  start_repl($game);
+
+}
+
+sub start_repl {
+  my $game = shift;
+  print q{
+
+Welcome to the TURTLE-SHELL!
+
+};
+
+  my $repl = SDLx::Coro::REPL::start();
+
+  $repl->eval('my $t = $::t');
+
+  # Give the REPL access to the $app
+  $repl->eval('my $app = $::app');
+
+  $game->run;
+}
+
+# Export some turtle work int the main namespace for convenience
+sub forward { $t->forward(@_) }
+sub left { $t->left(@_) }
+sub right { $t->right(@_) }
+sub pendown { $t->pendown(@_) }
+sub penup { $t->penup(@_) }
+sub jumpto { $t->jumpto(@_) }
+
+main();
+
